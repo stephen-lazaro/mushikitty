@@ -16,11 +16,26 @@ import cats.syntax.bifunctor._
  * of values through various manipulations without
  * losing that information.
  */
-final case class Smash[A, B](value: Option[(A, B)])
+sealed trait Smash[+A, +B]
 object Smash {
+  final case class Present[A, B](l: A, r: B) extends Smash[A, B]
+  final case object Unaccounted extends Smash[Nothing, Nothing]
+
+  def apply[A, B](value: Option[(A, B)]): Smash[A, B] =
+    value.map((Present.apply[A, B] _).tupled).getOrElse(Unaccounted)
+
+  /**
+   * Embed our pointed product in the unpointed category.
+   * i.e. give us the representation in terms of Option
+   */
+  def reify[A, B](self: Smash[A, B]): Option[(A, B)] = self match {
+    case Present(l, r) => Some((l, r))
+    case Unaccounted => None
+  }
+
   implicit val bifunctor: Bifunctor[Smash] = new Bifunctor[Smash] {
     def bimap[A, B, C, D](fac: Smash[A, B])(f: A => C, g: B => D): Smash[C, D] =
-      Smash(fac.value.map(_.bimap(f, g)))
+      Smash(reify(fac).map(_.bimap(f, g)))
   }
   implicit val bifoldable: Bifoldable[Smash] = new Bifoldable[Smash] {
 
@@ -29,7 +44,7 @@ object Smash {
 
   implicit def functor[A]: Functor[Smash[A, *]] = new Functor[Smash[A, *]] {
     def map[C, B](fa: Smash[A, C])(f: C => B): Smash[A, B] =
-      Smash(fa.value.map(_.map(f)))
+      Smash(reify(fa).map(_.map(f)))
   }
-  implicit def eq[A: Eq, B: Eq]: Eq[Smash[A, B]] = Eq.by(_.value)
+  implicit def eq[A: Eq, B: Eq]: Eq[Smash[A, B]] = Eq.by(reify)
 }
