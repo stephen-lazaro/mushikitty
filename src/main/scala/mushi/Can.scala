@@ -1,6 +1,6 @@
 package mushi
 
-import cats.Bifunctor
+import cats.{Bifunctor, Semigroup, Monad}
 import cats.data.Ior
 import cats.syntax.bifunctor._
 
@@ -33,5 +33,30 @@ object Can {
   implicit val bifunctor: Bifunctor[Can] = new Bifunctor[Can] {
     def bimap[A, B, C, D](fac: Can[A, B])(f: A => C, g: B => D): Can[C, D] =
       Can(reify(fac).map(_.bimap(f, g)))
+  }
+
+  implicit def monad[A: Semigroup]: Monad[Can[A, *]] = new Monad[Can[A, *]] {
+    def pure[B](b: B): Can[A, B] = RimRight(b)
+    def flatMap[C, B](fac: Can[A, C])(f: C => Can[A, B]): Can[A, B] =
+      fac match {
+        case Lid(l, r) => f(r) match {
+          case Lid(l2, r2) => Lid(Semigroup[A].combine(l, l2), r2)
+          case RimLeft(l2) => RimLeft(Semigroup[A].combine(l, l2))
+          case RimRight(r2) => RimRight(r2)
+          case Base => Base
+        }
+        case RimLeft(l) => RimLeft(l)
+        case RimRight(r) => f(r)
+        case Base => Base
+      }
+    def tailRecM[C, B](c: C)(f: C => Can[A, Either[C, B]]): Can[A, B] =
+      f(c) match {
+        case Lid(l1, Right(b)) => Lid(l1, b)
+        case Lid(l1, Left(c2)) => tailRecM(c2)(f)
+        case RimLeft(l) => RimLeft(l)
+        case RimRight(Right(b)) => RimRight(b)
+        case RimRight(Left(c2)) => tailRecM(c2)(f)
+        case Base => Base
+      }
   }
 }
