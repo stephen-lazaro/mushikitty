@@ -1,10 +1,12 @@
 package mushi
 
-import cats.{Bifoldable, Bifunctor, Eq, Functor, Monad, Monoid}
+import cats.{Bifoldable, Bifunctor, Eq, Functor, Monad, Monoid, Order}
+import cats.instances.vector._
 import cats.instances.option._
 import cats.instances.tuple._
 import cats.syntax.functor._
 import cats.syntax.bifunctor._
+import cats.syntax.foldable._
 
 /**
  * You can think of this as the Iff to
@@ -12,9 +14,6 @@ import cats.syntax.bifunctor._
  *
  * Either no value is present, or both are.
  *
- * This can be useful when enforcing the copresence
- * of values through various manipulations without
- * losing that information.
  */
 sealed trait Smash[+A, +B]
 object Smash {
@@ -49,6 +48,7 @@ object Smash {
         case Unaccounted => c
       }
   }
+
   implicit def monad[A](implicit monoid: Monoid[A]): Monad[Smash[A, *]] = new Monad[Smash[A, *]] {
     def pure[C](value: C): Smash[A, C] = Present(monoid.empty, value)
     def flatMap[C, B](fac: Smash[A, C])(f: C => Smash[A, B]): Smash[A, B] =
@@ -59,12 +59,18 @@ object Smash {
         }
         case Unaccounted => Unaccounted
       }
-    def tailRecM[C, B](c: C)(f: C => Smash[A, Either[C, B]]): Smash[A, B] =
+    def tailRecM[C, B](c: C)(f: C => Smash[A, Either[C, B]]): Smash[A, B] = {
+      def go(acc: Vector[A], c: C): (Vector[A], Smash[A, B]) =
         f(c) match {
-          case Present(a, Right(b)) => Present(a, b)
-          case Present(_, Left(c1)) => tailRecM(c1)(f)
-          case Unaccounted => Unaccounted
+          case Present(a, Right(b)) => (acc, Present(a, b))
+          case Present(a, Left(c1)) => go(acc :+ a, c1)
+          case Unaccounted => (acc, Unaccounted)
         }
+      go(Vector.empty, c) match {
+            case (v, Present(a, c)) => Present((v :+ a).combineAll, c)
+            case (_, Unaccounted) => Unaccounted
+          }
+    }
   }
 
   implicit def functor[A]: Functor[Smash[A, *]] = new Functor[Smash[A, *]] {
@@ -72,4 +78,5 @@ object Smash {
       Smash(reify(fa).map(_.map(f)))
   }
   implicit def eq[A: Eq, B: Eq]: Eq[Smash[A, B]] = Eq.by(reify)
+  implicit def ord[A: Order, B: Order]: Order[Smash[A, B]] = Order.by(reify)
 }
