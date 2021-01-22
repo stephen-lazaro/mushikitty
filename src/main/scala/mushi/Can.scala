@@ -1,11 +1,11 @@
 package mushi
 
-import cats.{Bifunctor, Semigroup, Monad}
+import cats.{Bifunctor, Functor, Monad, Semigroup}
 import cats.data.Ior
 import cats.syntax.bifunctor._
+import cats.syntax.functor._
 
 sealed trait Can[+A, +B]
-
 object Can {
   case class Lid[A, B](l: A, r: B) extends Can[A, B]
   case class RimLeft[A](value: A) extends Can[A, Nothing]
@@ -33,6 +33,11 @@ object Can {
   implicit val bifunctor: Bifunctor[Can] = new Bifunctor[Can] {
     def bimap[A, B, C, D](fac: Can[A, B])(f: A => C, g: B => D): Can[C, D] =
       Can(reify(fac).map(_.bimap(f, g)))
+  }
+
+  implicit def functor[A]: Functor[Can[A, *]] = new Functor[Can[A, *]] {
+    def map[C, B](fac: Can[A, C])(f: C => B): Can[A, B] =
+      Can(reify(fac).map(_.map(f)))
   }
 
   implicit def monad[A: Semigroup]: Monad[Can[A, *]] = new Monad[Can[A, *]] {
