@@ -21,4 +21,5 @@ class SmashSpec extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks with Fla
   checkAll("Smash.MonadLaws", MonadTests[Smash[Int, *]].monad[Int, Int, String])
   checkAll("Smash.BifunctorLaws", BifunctorTests[Smash].bifunctor[Int, Int, Int, String, String, String])
   checkAll("Smash.BifoldableLaws", BifoldableTests[Smash].bifoldable[Int, String, Long])
+  checkAll("Smash.BitraverseLaws", BitraverseTests[Smash].bitraverse[Option, Int, String, Long, Int, String, Long])
 }

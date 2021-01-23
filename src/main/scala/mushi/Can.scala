@@ -1,8 +1,10 @@
 package mushi
 
-import cats.{Bifunctor, Functor, Monad, Semigroup}
-import cats.data.Ior
+import cats.{Bifunctor, Functor, Eq, Monad, Order, Semigroup}
+import cats.data.{Ior, NonEmptyVector}
+import cats.instances.vector._
 import cats.syntax.bifunctor._
+import cats.syntax.foldable._
 import cats.syntax.functor._
 
 sealed trait Can[+A, +B]
@@ -32,12 +34,22 @@ object Can {
 
   implicit val bifunctor: Bifunctor[Can] = new Bifunctor[Can] {
     def bimap[A, B, C, D](fac: Can[A, B])(f: A => C, g: B => D): Can[C, D] =
-      Can(reify(fac).map(_.bimap(f, g)))
+      fac match {
+        case Lid(l, r) => Lid(f(l), g(r))
+        case RimLeft(l) => RimLeft(f(l))
+        case RimRight(r) => RimRight(g(r))
+        case Base => Base
+      }
   }
 
   implicit def functor[A]: Functor[Can[A, *]] = new Functor[Can[A, *]] {
     def map[C, B](fac: Can[A, C])(f: C => B): Can[A, B] =
-      Can(reify(fac).map(_.map(f)))
+      fac match {
+        case Lid(l, r) => Lid(l, f(r))
+        case RimLeft(l) => RimLeft(l)
+        case RimRight(r) => RimRight(f(r))
+        case Base => Base
+      }
   }
 
   implicit def monad[A: Semigroup]: Monad[Can[A, *]] = new Monad[Can[A, *]] {
@@ -47,21 +59,37 @@ object Can {
         case Lid(l, r) => f(r) match {
           case Lid(l2, r2) => Lid(Semigroup[A].combine(l, l2), r2)
           case RimLeft(l2) => RimLeft(Semigroup[A].combine(l, l2))
-          case RimRight(r2) => RimRight(r2)
+          case RimRight(r2) => Lid(l, r2)
           case Base => Base
         }
         case RimLeft(l) => RimLeft(l)
         case RimRight(r) => f(r)
         case Base => Base
       }
-    def tailRecM[C, B](c: C)(f: C => Can[A, Either[C, B]]): Can[A, B] =
-      f(c) match {
-        case Lid(l1, Right(b)) => Lid(l1, b)
-        case Lid(l1, Left(c2)) => tailRecM(c2)(f)
-        case RimLeft(l) => RimLeft(l)
-        case RimRight(Right(b)) => RimRight(b)
-        case RimRight(Left(c2)) => tailRecM(c2)(f)
-        case Base => Base
+    def tailRecM[C, B](c: C)(f: C => Can[A, Either[C, B]]): Can[A, B] = {
+      def go(acc: Vector[A], c: C): (Vector[A], Can[A, B]) = f(c) match {
+        case Lid(l1, Right(b)) => (acc, Lid(l1, b))
+        case Lid(l1, Left(c2)) => go(acc :+ l1, c2)
+        case RimLeft(l) => (acc, RimLeft(l))
+        case RimRight(Right(b)) => (acc, RimRight(b))
+        case RimRight(Left(c2)) => go(acc, c2)
+        case Base => (acc, Base)
       }
+
+      go(Vector.empty, c) match {
+        case (v, Lid(l, b)) =>
+          if (v.isEmpty) Lid(l, b)
+          else Lid(NonEmptyVector.fromVectorUnsafe(v :+ l).reduce, b)
+        case (v, RimRight(b)) =>
+          if (v.isEmpty) RimRight(b)
+          else Lid(NonEmptyVector.fromVectorUnsafe(v).reduce, b)
+        case (v, RimLeft(l)) => RimLeft(NonEmptyVector.fromVectorUnsafe(v :+ l).reduce)
+        case (_, Base) => Base
+      }
+    }
   }
+
+
+  implicit def eq[A: Eq, B: Eq]: Eq[Can[A, B]] = Eq.by(reify)
+  implicit def ord[A: Order, B: Order]: Order[Can[A, B]] = Order.by(reify)
 }

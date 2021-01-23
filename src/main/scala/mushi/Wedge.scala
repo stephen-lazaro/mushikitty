@@ -1,6 +1,6 @@
 package mushi
 
-import cats.Bifunctor
+import cats.{Bifunctor, Eq, Order}
 import cats.instances.either._
 import cats.syntax.bifunctor._
 
@@ -27,4 +27,7 @@ object Wedge {
     def bimap[A, B, C, D](fac: Wedge[A, B])(f: A => C, g: B => D): Wedge[C, D] =
       Wedge(reify(fac).map(_.bimap(f, g)))
   }
+
+  implicit def eq[A: Eq, B: Eq]: Eq[Wedge[A, B]] = Eq.by(reify)
+  implicit def ord[A: Order, B: Order]: Order[Wedge[A, B]] = Order.by(reify)
 }
