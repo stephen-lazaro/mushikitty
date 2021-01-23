@@ -1,8 +1,10 @@
 package mushi
 
-import cats.{Bifunctor, Eq, Functor, Monad, Order, Semigroup}
+import cats.{Bitraverse, Eq, Functor, Monad, Order, Semigroup}
 import cats.instances.either._
+import cats.syntax.applicative._
 import cats.syntax.bifunctor._
+import cats.syntax.functor._
 
 sealed trait Wedge[+A, +B]
 object Wedge {
@@ -23,9 +25,22 @@ object Wedge {
     case WEmpty    => None
   }
 
-  implicit val bifunctor: Bifunctor[Wedge] = new Bifunctor[Wedge] {
-    def bimap[A, B, C, D](fac: Wedge[A, B])(f: A => C, g: B => D): Wedge[C, D] =
-      Wedge(reify(fac).map(_.bimap(f, g)))
+  implicit val bitraverse: Bitraverse[Wedge] = new Bitraverse[Wedge] {
+    def bifoldLeft[A, B, C](fab: Wedge[A,B], c: C)(f: (C, A) => C, g: (C, B) => C): C = fab match {
+      case WLeft(l) => f(c, l)
+      case WRight(r) => g(c, r)
+      case WEmpty => c
+    }
+    def bifoldRight[A, B, C](fab: Wedge[A,B], c: cats.Eval[C])(f: (A, cats.Eval[C]) => cats.Eval[C], g: (B, cats.Eval[C]) => cats.Eval[C]): cats.Eval[C] = fab match {
+      case WLeft(l) => f(l, c)
+      case WRight(r) => g(r, c)
+      case WEmpty => c
+    }
+    def bitraverse[G[_], A, B, C, D](fab: Wedge[A,B])(f: A => G[C], g: B => G[D])(implicit evidence$1: cats.Applicative[G]): G[Wedge[C,D]] = fab match {
+      case WLeft(l) => f(l).map(WLeft.apply)
+      case WRight(r) => g(r).map(WRight.apply)
+      case WEmpty => WEmpty.pure[G].widen
+    }
   }
 
   implicit def functor[A]: Functor[Wedge[A, *]] = new Functor[Wedge[A, *]] {

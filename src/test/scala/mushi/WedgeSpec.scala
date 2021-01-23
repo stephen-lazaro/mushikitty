@@ -21,6 +21,5 @@ class WedgeSpec extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks with Fla
   checkAll("Wedge.FunctorLaws", FunctorTests[Wedge[Int, *]].functor[Int, Int, String])
   checkAll("Wedge.MonadLaws", MonadTests[Wedge[Int, *]].monad[Int, Int, String])
   checkAll("Wedge.BifunctorLaws", BifunctorTests[Wedge].bifunctor[Int, Int, Int, String, String, String])
-//  checkAll("Wedge.BifoldableLaws", BifoldableTests[Wedge].bifoldable[Int, String, Long])
-//  checkAll("Wedge.BitraverseLaws", BitraverseTests[Wedge].bitraverse[Option, Int, String, Long, Int, String, Long])
+  checkAll("Wedge.BitraverseLaws", BitraverseTests[Wedge].bitraverse[Option, Int, String, Long, Int, String, Long])
 }
