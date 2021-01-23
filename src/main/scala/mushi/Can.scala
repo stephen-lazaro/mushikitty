@@ -1,8 +1,10 @@
 package mushi
 
-import cats.{Bifunctor, Functor, Eq, Monad, Order, Semigroup}
+import cats.{Bifunctor, Bitraverse, Functor, Eq, Monad, Order, Semigroup}
 import cats.data.{Ior, NonEmptyVector}
 import cats.instances.vector._
+import cats.syntax.applicative._
+import cats.syntax.apply._
 import cats.syntax.bifunctor._
 import cats.syntax.foldable._
 import cats.syntax.functor._
@@ -40,6 +42,27 @@ object Can {
         case RimRight(r) => RimRight(g(r))
         case Base => Base
       }
+  }
+
+  implicit val Bitraverse: Bitraverse[Can] = new Bitraverse[Can] {
+    def bifoldLeft[A, B, C](fab: mushi.Can[A,B], c: C)(f: (C, A) => C, g: (C, B) => C): C = fab match {
+      case Lid(a, b) => g(f(c, a), b)
+      case RimRight(b) => g(c, b)
+      case RimLeft(a) => f(c, a)
+      case Base => c
+    }
+    def bifoldRight[A, B, C](fab: mushi.Can[A,B], c: cats.Eval[C])(f: (A, cats.Eval[C]) => cats.Eval[C], g: (B, cats.Eval[C]) => cats.Eval[C]): cats.Eval[C] = fab match {
+      case Lid(a, b) => g(b, f(a, c))
+      case RimRight(b) => g(b, c)
+      case RimLeft(a) => f(a, c)
+      case Base => c
+    }
+    def bitraverse[G[_], A, B, C, D](fab: mushi.Can[A,B])(f: A => G[C], g: B => G[D])(implicit evidence$1: cats.Applicative[G]): G[mushi.Can[C,D]] = fab match {
+      case Lid(a, b) => (f(a), g(b)).mapN(Lid.apply[C, D])
+      case RimRight(b) => g(b).map(RimRight.apply[D])
+      case RimLeft(a) => f(a).map(RimLeft.apply[C])
+      case Base => Base.pure[G].widen
+    }
   }
 
   implicit def functor[A]: Functor[Can[A, *]] = new Functor[Can[A, *]] {

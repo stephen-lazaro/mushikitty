@@ -22,7 +22,5 @@ class CanSpec extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks with FlatS
     )
   checkAll("Can.FunctorLaws", FunctorTests[Can[Int, *]].functor[Int, Int, String])
   checkAll("Can.MonadLaws", MonadTests[Can[Int, *]].monad[Int, Int, String])
-  checkAll("Can.BifunctorLaws", BifunctorTests[Can].bifunctor[Int, Int, Int, String, String, String])
-  //checkAll("Can.BifoldableLaws", BifoldableTests[Can].bifoldable[Int, String, Long])
-  //checkAll("Can.BitraverseLaws", BitraverseTests[Can].bitraverse[Option, Int, String, Long, Int, String, Long])
+  checkAll("Can.BitraverseLaws", BitraverseTests[Can].bitraverse[Option, Int, String, Long, Int, String, Long])
 }

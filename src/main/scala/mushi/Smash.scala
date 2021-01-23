@@ -34,22 +34,6 @@ object Smash {
     case Unaccounted => None
   }
 
-  implicit val bifunctor: Bifunctor[Smash] = new Bifunctor[Smash] {
-    def bimap[A, B, C, D](fac: Smash[A, B])(f: A => C, g: B => D): Smash[C, D] =
-      Smash(reify(fac).map(_.bimap(f, g)))
-  }
-  implicit val bifoldable: Bifoldable[Smash] = new Bifoldable[Smash] {
-    def bifoldLeft[A, B, C](fab: mushi.Smash[A,B], c: C)(f: (C, A) => C, g: (C, B) => C): C =
-      fab match {
-        case Present(a, b) => g(f(c, a), b)
-        case Unaccounted => c
-      }
-    def bifoldRight[A, B, C](fab: mushi.Smash[A,B], c: cats.Eval[C])(f: (A, cats.Eval[C]) => cats.Eval[C], g: (B, cats.Eval[C]) => cats.Eval[C]): cats.Eval[C] =
-      fab match {
-        case Present(a, b) => g(b, f(a, c))
-        case Unaccounted => c
-      }
-  }
   implicit val bitraverse: Bitraverse[Smash] = new Bitraverse[Smash] {
     def bitraverse[G[_], A, B, C, D](fab: mushi.Smash[A,B])(f: A => G[C], g: B => G[D])(implicit evidence$1: cats.Applicative[G]): G[mushi.Smash[C,D]] =
       fab match {
