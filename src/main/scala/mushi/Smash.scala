@@ -29,9 +29,28 @@ object Smash {
    * Embed our pointed product in the unpointed category.
    * i.e. give us the representation in terms of Option
    */
-  def reify[A, B](self: Smash[A, B]): Option[(A, B)] = self match {
-    case Present(l, r) => Some((l, r))
-    case Unaccounted => None
+  def reify[A, B](self: Smash[A, B]): Option[(A, B)] =
+    fold(self)(None, (a, b) => Option((a, b)))
+
+  def fold[A, B, C](self: Smash[A, B])(default: C, f: (A, B) => C): C = self match {
+    case Present(l, r) => f(l, r)
+    case Unaccounted => default
+  }
+
+  def isPresent[A, B](self: Smash[A, B]): Boolean =
+    fold(self)(false, (_, _) => true)
+  def isUnaccounted[A, B](self: Smash[A, B]): Boolean =
+    fold(self)(true, (_, _) => false)
+  def swap[A, B](self: Smash[A, B]): Smash[B, A] =
+    fold(self)(Unaccounted, (l, r) => Present(r, l))
+
+  implicit class standardSmashUtilityOps[A, B](value: Smash[A, B]) {
+    def reify = Smash.reify(value)
+    def swap = Smash.swap(value)
+    def fold[C](default: C, f: (A, B) => C): C =
+      Smash.fold(value)(default, f)
+    def isPresent: Boolean = Smash.isPresent(value)
+    def isUnaccounted: Boolean = Smash.isUnaccounted(value)
   }
 
   implicit val bitraverse: Bitraverse[Smash] = new Bitraverse[Smash] {

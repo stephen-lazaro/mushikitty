@@ -15,14 +15,42 @@ object Wedge {
   def apply[A, B](value: Option[Either[A, B]]): Wedge[A, B] =
     value.map(_.fold(WLeft.apply[A], WRight.apply[B])).getOrElse(WEmpty)
 
+  def fold[A, B, C](value: Wedge[A, B])(default: C, f: A => C, g: B => C): C =
+    value match {
+      case WLeft(a) => f(a)
+      case WRight(b) => g(b)
+      case WEmpty => default
+    }
+
+  def isLeft[A, B](value: Wedge[A, B]): Boolean =
+    fold(value)(false, _ => true, _ => false)
+  def isRight[A, B](value: Wedge[A, B]): Boolean =
+    fold(value)(false, _ => false, _ => true)
+  def isEmpty[A, B](value: Wedge[A, B]): Boolean =
+    fold(value)(true, _ => false, _ => false)
+
+  def swap[A, B](value: Wedge[A, B]): Wedge[B, A] =
+    fold(value)(WEmpty, WRight.apply, WLeft.apply)
+
   /**
    * Embed our pointed coproduct in the unpointed category.
    * i.e. give us the representation in terms of Option
    */
-  def reify[A, B](self: Wedge[A, B]): Option[Either[A, B]] = self match {
-    case WLeft(l)  => Some(Left(l))
-    case WRight(r) => Some(Right(r))
-    case WEmpty    => None
+  def reify[A, B](self: Wedge[A, B]): Option[Either[A, B]] =
+    fold(self)(
+      None,
+      l => Some(Left(l)),
+      r => Some(Right(r))
+    )
+
+  implicit class standardWedgeUtilityOps[A, B](value: Wedge[A, B]) {
+    def reify = Wedge.reify(value)
+    def swap = Wedge.swap(value)
+    def fold[C](default: C, f: A => C, g: B => C): C =
+      Wedge.fold(value)(default, f, g)
+    def isLeft: Boolean = Wedge.isLeft(value)
+    def isRight: Boolean = Wedge.isRight(value)
+    def isEmpty: Boolean = Wedge.isEmpty(value)
   }
 
   implicit val bitraverse: Bitraverse[Wedge] = new Bitraverse[Wedge] {

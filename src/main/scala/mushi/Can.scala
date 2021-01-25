@@ -1,6 +1,6 @@
 package mushi
 
-import cats.{Bifunctor, Bitraverse, Functor, Eq, Monad, Order, Semigroup}
+import cats.{Bifunctor, Bitraverse, Foldable, Functor, Eq, Monad, Order, Semigroup}
 import cats.data.{Ior, NonEmptyVector}
 import cats.instances.vector._
 import cats.syntax.applicative._
@@ -16,15 +16,17 @@ object Can {
   case class RimRight[B](value: B) extends Can[Nothing, B]
   case object Base extends Can[Nothing, Nothing]
 
-  def isLid[A, B](value: Can[A, B]): Boolean = value match {
-    case _ @ Lid(_, _) => true
-    case _ @ RimLeft(_) => false
-    case _ @ RimRight(_) => false
-    case _ @ Base => false
-  }
+  def isLid[A, B](value: Can[A, B]): Boolean =
+    fold(value)(false, _ => false, _ => false, (_, _) => true)
+  def isRimLeft[A, B](value: Can[A, B]): Boolean =
+    fold(value)(false, _ => true, _ => false, (_, _) => false)
+  def isRimRight[A, B](value: Can[A, B]): Boolean =
+    fold(value)(false, _ => false, _ => true, (_, _) => false)
+  def isBase[A, B](value: Can[A, B]): Boolean =
+    fold(value)(true, _ => false, _ => false, (_, _) => false)
 
-  def zip[A, B](value: Can[List[A], List[B]]): List[Can[A, B]] = value match {
-    case Lid(l, r) => (0 to Math.max(l.length, r.length)).map((i: Int) =>
+  def zip[F[_]: Foldable: Functor, A, B](value: Can[F[A], F[B]]): List[Can[A, B]] = value match {
+    case Lid(l, r) => (0L to Math.max(l.size, r.size)).map((i: Long) =>
           (l.get(i), r.get(i)) match {
             case (Some(a), Some(b)) => Lid(a, b)
             case (Some(a), None) => RimLeft(a)
@@ -32,8 +34,8 @@ object Can {
             case (None, None) => Base
           }
         ).toList
-    case RimLeft(l) => l.map(RimLeft.apply)
-    case RimRight(r) => r.map(RimRight.apply)
+    case RimLeft(l) => l.map(RimLeft.apply).toList
+    case RimRight(r) => r.map(RimRight.apply).toList
     case Base => List.empty // bit odd, should this be List(Base)?
   }
 
@@ -63,23 +65,20 @@ object Can {
     case Base => f(None)(None)
   }
 
-  def swap[A, B](can: Can[A, B]): Can[B, A] = can match {
-    case Lid(a, b) => Lid(b, a)
-    case RimLeft(a) => RimRight(a)
-    case RimRight(b) => RimLeft(b)
-    case Base => Base
-  }
+  def swap[A, B](can: Can[A, B]): Can[B, A] =
+    fold(can)(Base, RimRight.apply[A], RimLeft.apply[B], (a, b) => Lid[B, A](b, a))
 
   /**
    * Embed our pointed pointed product in the unpointed category.
    * i.e. give us the representation in terms of Option
    */
-  def reify[A, B](self: Can[A, B]): Option[Ior[A, B]] = self match {
-    case Lid(l, r) => Some(Ior.Both(l, r))
-    case RimLeft(l) => Some(Ior.Left(l))
-    case RimRight(r) => Some(Ior.Right(r))
-    case Base => None
-  }
+  def reify[A, B](self: Can[A, B]): Option[Ior[A, B]] =
+    fold(self)(
+      None,
+      Some.apply[Ior[A, B]] _ compose Ior.Left.apply[A],
+      Some.apply[Ior[A, B]] _ compose Ior.Right.apply[B],
+      (a, b) => Some(Ior.Both(a, b))
+    )
 
   implicit class standardCanUtilityOps[A, B](value: Can[A, B]) {
     def reify = Can.reify(value)
@@ -87,6 +86,9 @@ object Can {
     def fold[C](default: C, f: A => C, g: B => C, h: (A, B) => C) =
       Can.fold(value)(default, f, g, h)
     def isLid = Can.isLid(value)
+    def isRimLeft = Can.isRimLeft(value)
+    def isRimRight = Can.isRimRight(value)
+    def isBase = Can.isBase(value)
   }
 
   def apply[A, B](value: Option[Ior[A, B]]): Can[A, B] =
