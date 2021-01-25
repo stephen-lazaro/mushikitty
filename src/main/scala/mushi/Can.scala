@@ -16,6 +16,60 @@ object Can {
   case class RimRight[B](value: B) extends Can[Nothing, B]
   case object Base extends Can[Nothing, Nothing]
 
+  def isLid[A, B](value: Can[A, B]): Boolean = value match {
+    case _ @ Lid(_, _) => true
+    case _ @ RimLeft(_) => false
+    case _ @ RimRight(_) => false
+    case _ @ Base => false
+  }
+
+  def zip[A, B](value: Can[List[A], List[B]]): List[Can[A, B]] = value match {
+    case Lid(l, r) => (0 to Math.max(l.length, r.length)).map((i: Int) =>
+          (l.get(i), r.get(i)) match {
+            case (Some(a), Some(b)) => Lid(a, b)
+            case (Some(a), None) => RimLeft(a)
+            case (None, Some(b)) => RimRight(b)
+            case (None, None) => Base
+          }
+        ).toList
+    case RimLeft(l) => l.map(RimLeft.apply)
+    case RimRight(r) => r.map(RimRight.apply)
+    case Base => List.empty // bit odd, should this be List(Base)?
+  }
+
+  def fold[A, B, C](value: Can[A, B])(default: C, f: A => C, g: B => C, h: (A, B) => C): C =
+    value match {
+      case Lid(a, b) => h(a, b)
+      case RimLeft(a) => f(a)
+      case RimRight(b) => g(b)
+      case Base => default
+    }
+
+  def curry[A, B, C](value: Can[A, B] => Option[C]): Option[A] => Option[B] => Option[C] = {
+    case Some(a) => {
+      case Some(b) => value(Lid(a, b))
+      case None => value(RimLeft(a))
+    }
+    case None =>  {
+      case Some(b) => value(RimRight(b))
+      case None => value(Base)
+    }
+  }
+
+  def uncurry[A, B, C](f: Option[A] => Option[B] => Option[C]): Can[A, B] => Option[C] = {
+    case Lid(a, b) => f(Option(a))(Option(b))
+    case RimLeft(a) => f(Option(a))(None)
+    case RimRight(b) => f(None)(Option(b))
+    case Base => f(None)(None)
+  }
+
+  def swap[A, B](can: Can[A, B]): Can[B, A] = can match {
+    case Lid(a, b) => Lid(b, a)
+    case RimLeft(a) => RimRight(a)
+    case RimRight(b) => RimLeft(b)
+    case Base => Base
+  }
+
   /**
    * Embed our pointed pointed product in the unpointed category.
    * i.e. give us the representation in terms of Option
@@ -25,6 +79,14 @@ object Can {
     case RimLeft(l) => Some(Ior.Left(l))
     case RimRight(r) => Some(Ior.Right(r))
     case Base => None
+  }
+
+  implicit class standardCanUtilityOps[A, B](value: Can[A, B]) {
+    def reify = Can.reify(value)
+    def swap = Can.swap(value)
+    def fold[C](default: C, f: A => C, g: B => C, h: (A, B) => C) =
+      Can.fold(value)(default, f, g, h)
+    def isLid = Can.isLid(value)
   }
 
   def apply[A, B](value: Option[Ior[A, B]]): Can[A, B] =
