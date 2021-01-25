@@ -13,10 +13,12 @@ lazy val root = (project in file("."))
     name := "mushikitty",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.3.1",
-      "org.typelevel" %% "discipline-scalatest" % "2.1.1" % Test,
-      "org.typelevel" %% "cats-laws" % "2.3.1" % Test,
-      scalaTest % Test
-    )
+      "org.typelevel" %% "cats-laws" % "2.3.1",
+      "org.scalameta" %% "munit-scalacheck" % "0.7.21",
+      "org.typelevel" %% "discipline-munit" % "1.0.4",
+      "org.scalameta" %% "munit" % "0.7.21"
+    ),
+    testFrameworks += new TestFramework("munit.Framework")
   )
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.

@@ -1,13 +1,16 @@
 package mushi
 
+import cats.instances.int._
+import cats.instances.string._
 import cats.laws.discipline._
+import cats.laws.discipline.arbitrary._
+import cats.kernel.laws.discipline._
 import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.typelevel.discipline.Laws
-import org.typelevel.discipline.scalatest.FlatSpecDiscipline
 
-class WedgeSpec extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks with FlatSpecDiscipline {
+import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
+
+class WedgeSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
   implicit def arbWedge[A: Arbitrary, B: Arbitrary]: Arbitrary[Wedge[A, B]] =
     Arbitrary(
       for {

@@ -1,13 +1,16 @@
 package mushi
 
+import cats.instances.int._
+import cats.instances.string._
 import cats.laws.discipline._
+import cats.laws.discipline.arbitrary._
+import cats.kernel.laws.discipline._
 import org.scalacheck.{Arbitrary, Gen}
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.typelevel.discipline.Laws
-import org.typelevel.discipline.scalatest.FlatSpecDiscipline
 
-class CanSpec extends AnyFlatSpec with ScalaCheckDrivenPropertyChecks with FlatSpecDiscipline {
+import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
+
+class CanSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
   implicit def arbCan[A: Arbitrary, B: Arbitrary]: Arbitrary[Can[A, B]] =
     Arbitrary(
       for {
