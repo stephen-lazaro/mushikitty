@@ -5,7 +5,9 @@ import cats.instances.string._
 import cats.laws.discipline._
 import cats.laws.discipline.arbitrary._
 import cats.kernel.laws.discipline._
+import cats.syntax.eq._
 import org.scalacheck.{Arbitrary, Cogen, Gen}
+import org.scalacheck.Prop._
 import org.typelevel.discipline.Laws
 
 import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
@@ -30,4 +32,6 @@ class WedgeSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
   checkAll("Wedge.FunctorLaws", FunctorTests[Wedge[Int, *]].functor[Int, Int, String])
   checkAll("Wedge.MonadLaws", MonadTests[Wedge[Int, *]].monad[Int, Int, String])
   checkAll("Wedge.BitraverseLaws", BitraverseTests[Wedge].bitraverse[Option, Int, String, Long, Int, String, Long])
+
+  property("Wedge.swap symmetric") { forAll { (wedge: Wedge[Int, Int]) => wedge.swap.swap === wedge} }
 }

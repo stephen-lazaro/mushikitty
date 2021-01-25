@@ -5,7 +5,9 @@ import cats.instances.string._
 import cats.laws.discipline._
 import cats.laws.discipline.arbitrary._
 import cats.kernel.laws.discipline._
-import org.scalacheck.{Arbitrary, Cogen, Gen}
+import cats.syntax.eq._
+import org.scalacheck._
+import org.scalacheck.Prop._
 import org.typelevel.discipline.Laws
 
 import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
@@ -29,4 +31,6 @@ class SmashSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
   checkAll("Smash.FunctorLaws", FunctorTests[Smash[Int, *]].functor[Int, Int, String])
   checkAll("Smash.MonadLaws", MonadTests[Smash[Int, *]].monad[Int, Int, String])
   checkAll("Smash.BitraverseLaws", BitraverseTests[Smash].bitraverse[Option, Int, String, Long, Int, String, Long])
+
+  property("Smash.swap symmetric") { forAll { (smash: Smash[Int, Int]) => smash.swap.swap === smash} }
 }
