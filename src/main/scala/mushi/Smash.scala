@@ -1,13 +1,12 @@
 package mushi
 
-import cats.{Bifoldable, Bifunctor, Bitraverse, Eq, Functor, Monad, Monoid, Order}
+import cats.{Bitraverse, Eq, Functor, Monad, Monoid, Order}
 import cats.instances.vector._
 import cats.instances.option._
 import cats.instances.tuple._
 import cats.syntax.applicative._
 import cats.syntax.apply._
 import cats.syntax.functor._
-import cats.syntax.bifunctor._
 import cats.syntax.foldable._
 
 /**

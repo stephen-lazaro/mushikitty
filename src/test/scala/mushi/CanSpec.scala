@@ -9,7 +9,6 @@ import cats.laws.discipline.arbitrary._
 import cats.kernel.laws.discipline._
 import org.scalacheck._
 import org.scalacheck.Prop._
-import org.typelevel.discipline.Laws
 
 import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
 

@@ -3,7 +3,6 @@ package mushi
 import cats.{Bitraverse, Eq, Functor, Monad, Order, Semigroup}
 import cats.instances.either._
 import cats.syntax.applicative._
-import cats.syntax.bifunctor._
 import cats.syntax.functor._
 
 sealed trait Wedge[+A, +B]
@@ -31,6 +30,14 @@ object Wedge {
 
   def swap[A, B](value: Wedge[A, B]): Wedge[B, A] =
     fold(value)(WEmpty, WRight.apply, WLeft.apply)
+  def assocRight[A, B, C](value: Wedge[Wedge[A, B], C]): Wedge[A, Wedge[B, C]] = value match {
+    case WRight(c) => WRight(WRight(c))
+    case WLeft(WRight(b)) => WRight(WLeft(b))
+    case WLeft(WLeft(a)) => WLeft(a)
+    case WLeft(WEmpty) => WRight(WEmpty)
+    case WEmpty => WEmpty
+  }
+  def assocLeft[A, B, C](value: Wedge[A, Wedge[B, C]]): Wedge[Wedge[A, B], C] = ???
 
   /**
    * Embed our pointed coproduct in the unpointed category.

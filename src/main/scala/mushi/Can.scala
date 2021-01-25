@@ -2,10 +2,8 @@ package mushi
 
 import cats.{Bifunctor, Bitraverse, Foldable, Functor, Eq, Monad, Order, Semigroup}
 import cats.data.{Ior, NonEmptyVector}
-import cats.instances.vector._
 import cats.syntax.applicative._
 import cats.syntax.apply._
-import cats.syntax.bifunctor._
 import cats.syntax.foldable._
 import cats.syntax.functor._
 
@@ -67,6 +65,19 @@ object Can {
 
   def swap[A, B](can: Can[A, B]): Can[B, A] =
     fold(can)(Base, RimRight.apply[A], RimLeft.apply[B], (a, b) => Lid[B, A](b, a))
+  def assocRight[A, B, C](value: Can[Can[A, B], C]): Can[A, Can[B, C]] = value match {
+    case Lid(Lid(a, b), c) => Lid(a, Lid(b, c))
+    case Lid(RimLeft(a), c) => Lid(a, RimRight(c))
+    case Lid(RimRight(b), c) => RimRight(Lid(b, c))
+    case Lid(Base, c) => RimRight(RimRight(c))
+    case RimLeft(Lid(a, b)) => Lid(a, RimLeft(b))
+    case RimLeft(RimLeft(a)) => RimLeft(a)
+    case RimLeft(RimRight(b)) => RimRight(RimLeft(b))
+    case RimLeft(Base) => RimRight(Base)
+    case RimRight(c) => RimRight(RimRight(c))
+    case Base => Base
+  }
+  def assocLeft[A, B, C](value: Can[A, Can[B, C]]): Can[Can[A, B], C] = ???
 
   /**
    * Embed our pointed pointed product in the unpointed category.

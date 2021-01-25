@@ -3,12 +3,10 @@ package mushi
 import cats.instances.int._
 import cats.instances.string._
 import cats.laws.discipline._
-import cats.laws.discipline.arbitrary._
 import cats.kernel.laws.discipline._
 import cats.syntax.eq._
 import org.scalacheck._
 import org.scalacheck.Prop._
-import org.typelevel.discipline.Laws
 
 import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
 
