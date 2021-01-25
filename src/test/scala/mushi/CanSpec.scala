@@ -1,11 +1,12 @@
 package mushi
 
+import cats.data.Ior
 import cats.instances.int._
 import cats.instances.string._
 import cats.laws.discipline._
 import cats.laws.discipline.arbitrary._
 import cats.kernel.laws.discipline._
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{Arbitrary, Cogen, Gen}
 import org.typelevel.discipline.Laws
 
 import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
@@ -23,6 +24,12 @@ class CanSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
         case (None, None) => Can.Base
       }
     )
+
+  implicit def cogenCan[A: Cogen, B: Cogen]: Cogen[Can[A, B]] =
+    Cogen[Option[Ior[A, B]]].contramap(Can.reify)
+
+  checkAll("Can.EqLaws", EqTests[Can[Int, Long]].eqv)
+  checkAll("Can.OrderLaws", OrderTests[Can[Int, Long]].order)
   checkAll("Can.FunctorLaws", FunctorTests[Can[Int, *]].functor[Int, Int, String])
   checkAll("Can.MonadLaws", MonadTests[Can[Int, *]].monad[Int, Int, String])
   checkAll("Can.BitraverseLaws", BitraverseTests[Can].bitraverse[Option, Int, String, Long, Int, String, Long])

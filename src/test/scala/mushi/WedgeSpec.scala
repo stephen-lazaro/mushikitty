@@ -5,7 +5,7 @@ import cats.instances.string._
 import cats.laws.discipline._
 import cats.laws.discipline.arbitrary._
 import cats.kernel.laws.discipline._
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{Arbitrary, Cogen, Gen}
 import org.typelevel.discipline.Laws
 
 import munit.{FunSuite, ScalaCheckSuite, DisciplineSuite}
@@ -21,8 +21,13 @@ class WedgeSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
        else if (b.isDefined) Wedge.WRight(b.get)
        else Wedge.WEmpty
     )
+
+  implicit def cogenWedge[A: Cogen, B: Cogen]: Cogen[Wedge[A, B]] =
+    Cogen[Option[Either[A, B]]].contramap(Wedge.reify)
+
+  checkAll("Wedge.EqLaws", EqTests[Wedge[Int, Long]].eqv)
+  checkAll("Wedge.OrderLaws", OrderTests[Wedge[Int, Long]].order)
   checkAll("Wedge.FunctorLaws", FunctorTests[Wedge[Int, *]].functor[Int, Int, String])
   checkAll("Wedge.MonadLaws", MonadTests[Wedge[Int, *]].monad[Int, Int, String])
-  checkAll("Wedge.BifunctorLaws", BifunctorTests[Wedge].bifunctor[Int, Int, Int, String, String, String])
   checkAll("Wedge.BitraverseLaws", BitraverseTests[Wedge].bitraverse[Option, Int, String, Long, Int, String, Long])
 }
