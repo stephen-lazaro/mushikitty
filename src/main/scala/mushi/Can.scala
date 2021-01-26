@@ -66,19 +66,29 @@ object Can {
   def swap[A, B](can: Can[A, B]): Can[B, A] =
     fold(can)(Base, RimRight.apply[A], RimLeft.apply[B], (a, b) => Lid[B, A](b, a))
   def assocRight[A, B, C](value: Can[Can[A, B], C]): Can[A, Can[B, C]] = value match {
-    case Lid(Lid(a, b), c) => Lid(a, Lid(b, c))
-    case Lid(RimLeft(a), c) => Lid(a, RimRight(c))
-    case Lid(RimRight(b), c) => RimRight(Lid(b, c))
-    case Lid(Base, c) => RimRight(RimRight(c))
-    case RimLeft(Lid(a, b)) => Lid(a, RimLeft(b))
-    case RimLeft(RimLeft(a)) => RimLeft(a)
+    case Lid(Lid(a, b), c)    => Lid(a, Lid(b, c))
+    case Lid(RimLeft(a), c)   => Lid(a, RimRight(c))
+    case Lid(RimRight(b), c)  => RimRight(Lid(b, c))
+    case Lid(Base, c)         => RimRight(RimRight(c))
+    case RimLeft(Lid(a, b))   => Lid(a, RimLeft(b))
+    case RimLeft(RimLeft(a))  => RimLeft(a)
     case RimLeft(RimRight(b)) => RimRight(RimLeft(b))
-    case RimLeft(Base) => RimRight(Base)
-    case RimRight(c) => RimRight(RimRight(c))
-    case Base => Base
+    case RimLeft(Base)        => RimRight(Base)
+    case RimRight(c)          => RimRight(RimRight(c))
+    case Base                 => Base
   }
-  def assocLeft[A, B, C](value: Can[A, Can[B, C]]): Can[Can[A, B], C] = ???
-
+  def assocLeft[A, B, C](value: Can[A, Can[B, C]]): Can[Can[A, B], C] = value match {
+    case Lid(a, Lid(b, c))     => Lid(Lid(a, b), c)
+    case Lid(a, RimRight(c))   => Lid(RimLeft(a), c)
+    case Lid(a, RimLeft(b))    => RimLeft(Lid(a, b))
+    case Lid(a, Base)          => RimLeft(RimLeft(a))
+    case RimRight(Lid(b, c))   => Lid(RimRight(b), c)
+    case RimRight(RimLeft(b))  => RimLeft(RimRight(b))
+    case RimRight(RimRight(a)) => RimRight(a)
+    case RimRight(Base)        => RimLeft(Base)
+    case RimLeft(a)            => RimLeft(RimLeft(a))
+    case Base                  => Base
+  }
   /**
    * Embed our pointed pointed product in the unpointed category.
    * i.e. give us the representation in terms of Option

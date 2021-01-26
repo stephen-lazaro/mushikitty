@@ -32,4 +32,6 @@ class WedgeSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
   checkAll("Wedge.BitraverseLaws", BitraverseTests[Wedge].bitraverse[Option, Int, String, Long, Int, String, Long])
 
   property("Wedge.swap symmetric") { forAll { (wedge: Wedge[Int, Int]) => wedge.swap.swap === wedge} }
+  property("Wedge.assocRight andThen Wedge.assocLeft is identity")(forAll((wedge: Wedge[Wedge[Int, Int], Int]) => Wedge.assocLeft(Wedge.assocRight(wedge)) === wedge))
+  property("Wedge.assocLeft andThen Wedge.assocRight is identity")(forAll((wedge: Wedge[Int, Wedge[Int, Int]]) => Wedge.assocRight(Wedge.assocLeft(wedge)) === wedge))
 }

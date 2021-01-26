@@ -36,4 +36,14 @@ class CanSpec extends FunSuite with ScalaCheckSuite with DisciplineSuite {
   checkAll("Can.BitraverseLaws", BitraverseTests[Can].bitraverse[Option, Int, String, Long, Int, String, Long])
 
   property("Can.swap symmetric") { forAll { (can: Can[Int, Int]) => can.swap.swap === can } }
+  property("Can.assocRight andThen Can.assocLeft is lossless")(forAll((can: Can[Can[Int, Int], Int]) =>
+      Can.assocLeft(Can.assocRight(can)) === can || (can match {
+        case Can.Lid(Can.Base, _) => true
+        case _ => false
+      })))
+  property("Can.assocLeft andThen Can.assocRight is lossless")(forAll((can: Can[Int, Can[Int, Int]]) =>
+      Can.assocRight(Can.assocLeft(can)) === can || (can match {
+        case Can.Lid(_, Can.Base) => true
+        case _ => false
+      })))
 }

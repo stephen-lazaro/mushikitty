@@ -37,7 +37,13 @@ object Wedge {
     case WLeft(WEmpty) => WRight(WEmpty)
     case WEmpty => WEmpty
   }
-  def assocLeft[A, B, C](value: Wedge[A, Wedge[B, C]]): Wedge[Wedge[A, B], C] = ???
+  def assocLeft[A, B, C](value: Wedge[A, Wedge[B, C]]): Wedge[Wedge[A, B], C] = value match {
+    case WRight(WRight(c)) => WRight(c)
+    case WRight(WEmpty) => WLeft(WEmpty)
+    case WRight(WLeft(b)) => WLeft(WRight(b))
+    case WLeft(a) => WLeft(WLeft(a))
+    case WEmpty => WEmpty
+  }
 
   /**
    * Embed our pointed coproduct in the unpointed category.
