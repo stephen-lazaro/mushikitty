@@ -7,8 +7,8 @@ import cats.syntax.functor._
 
 sealed trait Wedge[+A, +B]
 object Wedge {
-  case class WLeft[A](value: A) extends Wedge[A, Nothing]
-  case class WRight[B](value: B) extends Wedge[Nothing, B]
+  final case class WLeft[A](value: A) extends Wedge[A, Nothing]
+  final case class WRight[B](value: B) extends Wedge[Nothing, B]
   case object WEmpty extends Wedge[Nothing, Nothing]
 
   def apply[A, B](value: Option[Either[A, B]]): Wedge[A, B] =

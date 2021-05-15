@@ -19,7 +19,7 @@ import cats.syntax.foldable._
 sealed trait Smash[+A, +B]
 object Smash {
   final case class Present[A, B](l: A, r: B) extends Smash[A, B]
-  final case object Unaccounted extends Smash[Nothing, Nothing]
+  case object Unaccounted extends Smash[Nothing, Nothing]
 
   def apply[A, B](value: Option[(A, B)]): Smash[A, B] =
     value.map((Present.apply[A, B] _).tupled).getOrElse(Unaccounted)
@@ -96,7 +96,7 @@ object Smash {
 
   implicit def functor[A]: Functor[Smash[A, *]] = new Functor[Smash[A, *]] {
     def map[C, B](fa: Smash[A, C])(f: C => B): Smash[A, B] =
-      Smash(reify(fa).map(_.map(f)))
+      Smash(reify(fa).map((o: (A, C)) => (o._1, f(o._2))))
   }
   implicit def eq[A: Eq, B: Eq]: Eq[Smash[A, B]] = Eq.by(reify)
   implicit def ord[A: Order, B: Order]: Order[Smash[A, B]] = Order.by(reify)

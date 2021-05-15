@@ -9,9 +9,9 @@ import cats.syntax.functor._
 
 sealed trait Can[+A, +B]
 object Can {
-  case class Lid[A, B](l: A, r: B) extends Can[A, B]
-  case class RimLeft[A](value: A) extends Can[A, Nothing]
-  case class RimRight[B](value: B) extends Can[Nothing, B]
+  final case class Lid[A, B](l: A, r: B) extends Can[A, B]
+  final case class RimLeft[A](value: A) extends Can[A, Nothing]
+  final case class RimRight[B](value: B) extends Can[Nothing, B]
   case object Base extends Can[Nothing, Nothing]
 
   def isLid[A, B](value: Can[A, B]): Boolean =
